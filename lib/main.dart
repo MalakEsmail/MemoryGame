@@ -27,21 +27,18 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<TileModel> pairs = new List<TileModel>();
-  List<TileModel> visiblePairs = new List<TileModel>();
-
   @override
   void initState() {
     super.initState();
     pairs = getPairs();
     pairs.shuffle();
-    visiblePairs=pairs;
-    selected=true;
-    Future.delayed(const Duration(seconds: 5),(){
-     setState(() {
-             visiblePairs=getQuestion();
-             selected=false;
-          });
+    visiblePairs = pairs;
+    selected = true;
+    Future.delayed(const Duration(seconds: 5), () {
+      setState(() {
+        visiblePairs = getQuestion();
+        selected = false;
+      });
     });
   }
 
@@ -49,27 +46,51 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        padding:EdgeInsets.symmetric(vertical: 50,horizontal: 20),
+        padding: EdgeInsets.symmetric(vertical: 50, horizontal: 20),
         child: Column(
           children: [
-            SizedBox(height: 24,),
-            Text('$points/800',style: TextStyle(fontSize:20 ,fontWeight: FontWeight.w500)),
-            Text('points'),
-            SizedBox(),
-            GridView(
-              shrinkWrap: true,
-              children: List.generate(visiblePairs.length, (index) {
-                return Tile(
-                  imageAssetPath: visiblePairs[index].getIamgeAssetPath(),
-                  selected: visiblePairs[index].getIsSelected(),
-                  parent: this,
-                );
-              }),
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 100,
-                mainAxisSpacing: 0.0,
-              ),
-            )
+            SizedBox(
+              height: 40,
+            ),
+            points != 800?Column(
+              children: [
+                Text('$points/800',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+                Text('points'),
+              ],
+            ):Container(),
+            SizedBox(
+              height: 20,
+            ),
+            points != 800
+                ? GridView(
+                    shrinkWrap: true,
+                    children: List.generate(visiblePairs.length, (index) {
+                      return Tile(
+                        imageAssetPath: visiblePairs[index].getIamgeAssetPath(),
+                        parent: this,
+                        tileIndex: index,
+                      );
+                    }),
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 100,
+                      mainAxisSpacing: 0.0,
+                    ),
+                  )
+                : Container(
+                  padding: EdgeInsets.symmetric(vertical: 12,horizontal: 24),
+                    decoration: BoxDecoration(
+                        color: Colors.blue,
+                        borderRadius: BorderRadius.circular(24)),
+                    child: Text(
+                      'Replay',
+                      style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white),
+                    ),
+                  )
           ],
         ),
       ),
@@ -80,10 +101,10 @@ class _HomePageState extends State<HomePage> {
 ///// Tile/////////
 class Tile extends StatefulWidget {
   String imageAssetPath;
-  bool selected;
   _HomePageState parent;
+  int tileIndex;
 
-  Tile({this.imageAssetPath, this.selected, this.parent});
+  Tile({this.imageAssetPath, this.parent, this.tileIndex});
   @override
   _TileState createState() => _TileState();
 }
@@ -92,12 +113,55 @@ class _TileState extends State<Tile> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: (){
+      onTap: () {
+        if (!selected) {
+          if (selectedImageAssetPath != "") {
+            // second time
 
+            if (selectedImageAssetPath ==
+                pairs[widget.tileIndex].getIamgeAssetPath()) {
+              // correct
+              selected = true;
+              Future.delayed(const Duration(seconds: 2), () {
+                points = points + 100;
+                setState(() {});
+                selected = false;
+                widget.parent.setState(() {
+                  pairs[widget.tileIndex].setIamgeAssetPath("");
+                  pairs[selectedTileIndex].setIamgeAssetPath("");
+                });
+                selectedImageAssetPath = "";
+              });
+            } else {
+              // wrong
+              selected = true;
+              Future.delayed(const Duration(seconds: 2), () {
+                selected = false;
+                widget.parent.setState(() {
+                  pairs[widget.tileIndex].setIsSelected(false);
+                  pairs[selectedTileIndex].setIsSelected(false);
+                });
+                selectedImageAssetPath = "";
+              });
+            }
+          } else {
+            // first time
+            selectedTileIndex = widget.tileIndex;
+            selectedImageAssetPath =
+                pairs[widget.tileIndex].getIamgeAssetPath();
+          }
+          setState(() {
+            pairs[widget.tileIndex].setIsSelected(true);
+          });
+        }
       },
       child: Container(
         margin: EdgeInsets.all(5),
-        child: Image.asset(widget.imageAssetPath),
+        child: pairs[widget.tileIndex].getIamgeAssetPath() != ""
+            ? Image.asset(pairs[widget.tileIndex].getIsSelected()
+                ? pairs[widget.tileIndex].getIamgeAssetPath()
+                : widget.imageAssetPath)
+            : Image.asset('assets/correct.png'),
       ),
     );
   }
